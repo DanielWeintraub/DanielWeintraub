@@ -2,3 +2,6 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: dweintraub
+  annotations:
+    # This annotation is required for access
+    externalsecrets.kubernetes-client.io/permitted-key-name: terraform/

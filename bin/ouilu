@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -eu
+
+if [ $# -eq 0 ]
+then
+  echo "Usage: ouilookup [mac]"
+  echo ""
+  exit 1
+fi
+
+FILENAME="/tmp/ouilu-tmp"
+(( FILEAGE = $(date +%s) - $(stat -f "%a" "$FILENAME") ))
+if [ ! -f "$FILENAME" ] || (( "$FILEAGE"  > 864000 )); then
+  echo "Updating local db..."
+  curl -s -L -o "$FILENAME" "http://standards-oui.ieee.org/oui/oui.txt/"
+fi
+
+OUI=$(echo "$1" | tr -d ':.-' | cut -c -6)
+grep -i "$OUI" "$FILENAME"
