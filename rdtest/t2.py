@@ -2,28 +2,43 @@ import requests
 from pyrundeck import Rundeck
 from icecream import ic
 import yaml
+import json
 
 with open( "./secret.yml", "r") as configFile:
     config = yaml.safe_load(configFile)
 
-snd_rundeck = Rundeck('http://manager.snd.rundeck.cloud',
-                  token=config['creds']['snd'],
-                  api_version=32 )
-
-stg_rundeck = Rundeck('http://manager.stg.rundeck.cloud',
-                  token=config['creds']['stg'],
-                  api_version=32 )
-
-proj = 'ClusterManager'
-
-j1 = snd_rundeck.get_job( name='Create or Update Customer Rundeck Instance', project='ClusterManager' )
-
-j1 = yaml.safe_load(snd_rundeck.get_job_def( job_id=j1['id'], format='yaml'))
-
-snd_headers = { 'X-Rundeck-Auth-Token': config['creds']['snd'] }
-myidlist = [ j1[0]['id'] ]
-myparams = { 'format': 'yaml', 'idlist': myidlist }
-ic(myparams)
-r = requests.get(f'https://{config["host"]["snd"]}/api/14/project/{proj}/jobs/export', headers=snd_headers, params=myparams)
-j2 = yaml.safe_load(r.text)
-ic(j1,j2)
+def syncJob(name, project, dest):
+    #Find Job
+    snd_headers = { 'X-Rundeck-Auth-Token': config['creds']['snd'], "Accept": 'application/json' }
+    myparams = { 'jobExactFilter': name }
+    r = requests.get(f'https://{config["host"]["snd"]}/api/14/project/{project}/jobs',
+            headers=snd_headers,
+            params=myparams )
+    jobs = json.loads(r.text)
+    if len(jobs) != 1:
+        raise ValueError("Number of jobs returned is not 1")
+    job = jobs[0]
+    
+    myidlist = [ job['id'] ]
+    myparams = { 'format': 'yaml', 'idlist': myidlist }
+    r = requests.get(f'https://{config["host"]["snd"]}/api/14/project/{project}/jobs/export', headers=snd_headers, params=myparams)
+    jobDefs = yaml.safe_load(r.text)
+    if len(jobDefs) != 1:
+        raise ValueError("Number of job defs is not 1")
+    jobDef = jobDefs[0]
+    
+    jobDef['name'] += ' (SYNCED)'
+    
+    ic(jobDef)
+    
+    dest_headers = { 'X-Rundeck-Auth-Token': config['creds'][dest], 'Content-Type': 'application/yaml', "Accept": 'application/json' }
+    myparams = { 'dupeOption': 'update' }
+    r = requests.post(f'https://{config["host"][dest]}/api/14/project/{project}/jobs/import', headers=dest_headers, params=myparams, data=yaml.dump([jobDef]))
+    response = json.loads(r.text)
+    ic(response)
+    
+if __name__ == "__main__":
+    projName = 'ClusterManager'
+    jobName = 'Apply Customer Rundeck Instance'
+    syncJob(name=jobName, project=projName, dest='stg')
+    #syncJob(name=jobName, project=projName, dest='prod')
