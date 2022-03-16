@@ -1,6 +1,6 @@
 #!/bin/bash
 
-bucket=pd-rdc-asdf51-snd
+bucket=pd-rdc-asdfp1
 
 for i in $(seq 1 150); do
        echo "testfile ${i}-$(date)"> "testfile-${i}.txt"
