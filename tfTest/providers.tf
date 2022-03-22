@@ -15,5 +15,9 @@ provider "aws" {
 resource "aws_secretsmanager_secret" "test_secret" {
   name_prefix = "dweintraub_test_secret"
   description = "testing secret replication"
+
+  replica {
+    region = "us-east-2"
+  }
   
 }
