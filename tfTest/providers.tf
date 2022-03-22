@@ -2,7 +2,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "= 3.68.0"
+      version = "= 4.6.0"
     }
   }
 }
@@ -16,8 +16,8 @@ resource "aws_secretsmanager_secret" "test_secret" {
   name_prefix = "dweintraub_test_secret"
   description = "testing secret replication"
 
-  replica {
-    region = "us-east-2"
-  }
+  #replica {
+  #  region = "us-east-2"
+  #} 
   
 }
